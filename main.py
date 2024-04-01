@@ -1,14 +1,19 @@
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+import requests
 
-scope = ["https://docs.google.com/spreadsheets/d/1WjSQnzFIqTKtnKVx5O19OxBul2MoiAgyy1iYgFn495s/edit#gid=287905941"]
-credentials = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
-docid = "your_spreadsheet_id_here"
+def getGoogleSheet(spreadsheet_id, outFile, gid=0, csv=True):
+    if csv:
+        mode = "export?format=csv"
+    else:
+        mode = "edit"
+    url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/{mode}#gid={gid}"
 
-client = gspread.authorize(credentials)
-spreadsheet = client.open_by_key(docid)
+    response = requests.get(url)
+    assert response.status_code == 200, f"Error downloading Google Sheet: {response.status_code}"
 
-for i, worksheet in enumerate(spreadsheet.worksheets()):
-    # Process each worksheet as needed
-    # For example, you can access cell values using worksheet.cell(row, col).value
-    pass
+    with open(outFile, "wb") as f:
+        f.write(response.content)
+    # print(f"CSV saved to {outFile}")
+
+filepath = getGoogleSheet("1WjSQnzFIqTKtnKVx5O19OxBul2MoiAgyy1iYgFn495s", "google_sheet.csv")
+
+# sys.exit(0); ## success
