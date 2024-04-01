@@ -1,23 +1,23 @@
+import json
 import os.path
-import requests
+import gspread
 
 assert os.path.isfile("./google_cloud_key.json"), "Missing Google Cloud key. Contact Eric Lewis."
 
+# Authenticate (no need for full edit permissions)
+gc = gspread.service_account(filename="google_cloud_key.json")
 
-def getGoogleSheet(spreadsheet_id, outFile, gid=0, csv=True):
-    if csv:
-        mode = "export?format=csv"
-    else:
-        mode = "edit"
-    url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/{mode}#gid={gid}"
+# Open the publicly shared Google Sheet by URL
+sheet_url = "https://docs.google.com/spreadsheets/d/1WjSQnzFIqTKtnKVx5O19OxBul2MoiAgyy1iYgFn495s/edit"
+spreadsheet = gc.open_by_url(sheet_url)
 
-    response = requests.get(url)
-    assert response.status_code == 200, f"Error downloading Google Sheet: {response.status_code}"
+index = spreadsheet.worksheet("list").get_all_values()
 
-    with open(outFile, "wb") as f:
-        f.write(response.content)
-    # print(f"CSV saved to {outFile}")
 
-filepath = getGoogleSheet("1WjSQnzFIqTKtnKVx5O19OxBul2MoiAgyy1iYgFn495s", "google_sheet.csv")
 
-# sys.exit(0); ## success
+with open("index.json", "w") as f:
+    f.write(json.dumps(index, indent=2))
+
+with open("dump.json", "w") as f:
+    f.write(json.dumps(spreadsheet.worksheet(index[1][1]).get_all_values(), indent=2))
+# print(data)
