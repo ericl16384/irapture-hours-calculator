@@ -1,4 +1,8 @@
+import os.path
 import requests
+
+assert os.path.isfile("./google_cloud_key.json"), "Missing Google Cloud key. Contact Eric Lewis."
+
 
 def getGoogleSheet(spreadsheet_id, outFile, gid=0, csv=True):
     if csv:
