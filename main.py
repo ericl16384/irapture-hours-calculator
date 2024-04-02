@@ -141,6 +141,7 @@ print("please enter timeframe")
 start = get_time_from_user("start:\t")
 end = get_time_from_user("end:\t")
 
+print()
 print(f"start: {start}")
 print(f"end: {end}")
 
