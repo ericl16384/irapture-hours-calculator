@@ -1,0 +1,6 @@
+*.csv
+*.json
+
+google_cloud_key.json
+
+downloads/
