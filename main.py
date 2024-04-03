@@ -1,12 +1,16 @@
 print("loading libraries")
 
-import time, datetime
+from datetime import datetime
+import time
 import os.path
 import csv
 
 import gspread
 
 assert os.path.isfile("./google_cloud_key.json"), "Missing Google Cloud key. Contact Eric Lewis."
+
+
+PROGRAM_START_TIMESTAMP = datetime.timestamp(datetime.now())
 
 
 print("authenticating")
@@ -82,7 +86,7 @@ sheets_list = sh.worksheets()
 
 
 def load_sheet_data(title):
-    base_delay = 0.001
+    base_delay = 1
     delay = base_delay
 
     sheet = None
@@ -94,6 +98,7 @@ def load_sheet_data(title):
             else:
                 sheet = sh.worksheet(title)
         except:
+            print("waiting", delay, "seconds")
             time.sleep(delay)
             delay *= 2
             continue
@@ -115,9 +120,9 @@ for organization, list in index:
 
     sheets[list] = load_sheet_data(list)
 
-    # debug
-    if len(sheets) == 2:
-        break
+    # # debug
+    # if len(sheets) == 5:
+    #     break
 
 
 def get_time_from_user(msg):
@@ -135,7 +140,7 @@ def get_time_from_user(msg):
             "%Y",
         ):
             try:
-                return datetime.datetime.strptime(ans, format).timestamp()
+                return datetime.strptime(ans, format).timestamp()
             except ValueError:
                 pass
         print()
@@ -144,13 +149,45 @@ def get_time_from_user(msg):
 
 
 print()
-print(f"{len(sheets)} datasheets loaded")
+print(datetime.timestamp(datetime.now() - PROGRAM_START_TIMESTAMP), "seconds elapsed")
+print(len(sheets), "datasheets loaded")
+print()
+print("HINT: DO NOT CLOSE PROGRAM, BUT INSTEAD KEEP IT OPEN BETWEEN SEARCHES")
 print()
 
 
 # import json
 # with open("dumps.json", "w") as f:
 #     f.write(json.dumps(sheets, indent=2))
+
+
+def get_time_from_sheet(date, time):
+    t_str = f"{date} {time}"
+    am_pm = time[-2:]
+    t_str = t_str[:-3]
+
+    t = 0
+    for format in (
+        "%m/%d/%Y %H:%M:%S",
+        "%m/%d/%Y %H:%M"
+    ):
+        try:
+            t += datetime.strptime(t_str, format).timestamp()
+            break
+        except ValueError:
+            pass
+
+    if t == 0:
+        print(f"WARNING: bad time stamp detected; ignoring ({date}, {time})")
+
+    if am_pm == "AM":
+        pass
+    elif am_pm == "PM":
+        # add 12 hours
+        t += 60*60*12
+    else:
+        assert False
+    return t
 
 
 while True:
@@ -161,7 +198,7 @@ while True:
     if not start:
         start = 0
     if not end:
-        end = 2**64
+        end = 2**32
 
     # print()
     # print(f"start: {start}")
@@ -174,39 +211,136 @@ while True:
     print("calculating...")
 
 
-    people = {}
+    hours_by_sheet = {}
+    totals_by_person = {}
 
     for title, sheet in sheets.items():
         if title.startswith("."):
             continue
 
+        hours_by_sheet[title] = {}
+
         for i, row in enumerate(sheet):
             if i < 6:
                 continue
 
-            # if time range is valid
+            if "" in row[:5]:
+                continue
 
+            date = row[0]
             person = row[1]
+            in_time = row[2]
+            out_time = row[3]
             hours = row[4]
 
-            if not person or not hours:
+            in_stamp = get_time_from_sheet(date, in_time)
+            out_stamp = get_time_from_sheet(date, out_time)
+
+            if in_stamp < start or out_stamp > end:
+                # means that it was excluded by the time selection
                 continue
+
+            # print(f"{date}\t{in_time}\t{out_time}")
 
             hours = float(hours)
 
-            if person not in people:
-                people[person] = 0
-            people[person] += hours
+            if person not in hours_by_sheet[title]:
+                hours_by_sheet[title][person] = 0
+            hours_by_sheet[title][person] += hours
+
+            if person not in totals_by_person:
+                totals_by_person[person] = 0
+            totals_by_person[person] += hours
 
             # print(row)
             # input()
 
-    print(people)
+
+    # print(hours_by_sheet)
+
+    export_table = []
+
+    # Organization, list
+    for row in index:
+        export_table.append(row[:2])
+
+    # header
+    for person in totals_by_person:
+        export_table[0].append(person)
+
+    # hours
+    for i, row in enumerate(export_table):
+        if i == 0:
+            continue
+
+        name, title = row
+        for person in export_table[0][2:]:
+
+            # debug
+            if title not in hours_by_sheet:
+                export_table[i].append("")
+                continue
+
+
+            if person in hours_by_sheet[title]:
+                h = hours_by_sheet[title][person]
+            else:
+                h = 0
+            export_table[i].append(h)
+
+    # person totals
+    export_table.append(["TOTAL", ""])
+    for person in export_table[0][2:]:
+        export_table[-1].append(totals_by_person[person])
+    
+    # sheet (row) totals
+    export_table[0].append("TOTAL")
+    for i, row in enumerate(export_table):
+        if i < 1:
+            continue
+
+        try:
+            v = sum(export_table[i][2:])
+        except TypeError:
+            v = ""
+        export_table[i].append(v)
+
+
+    # info (added above table)
+    info_table = [
+        ["https://github.com/ericl16384/irapture-hours-calculator"],
+        ["https://docs.google.com/spreadsheets/d/1WjSQnzFIqTKtnKVx5O19OxBul2MoiAgyy1iYgFn495s/edit#gid=287905941"],
+        [],
+        ["Program run time",
+         datetime.fromtimestamp(PROGRAM_START_TIMESTAMP).strftime("%m/%d/%Y"),
+         datetime.fromtimestamp(PROGRAM_START_TIMESTAMP).strftime("%I:%M:%S %p"),
+        ],
+        [],
+        ["Filter start time",
+         datetime.fromtimestamp(start).strftime("%m/%d/%Y"),
+         datetime.fromtimestamp(start).strftime("%I:%M:%S %p")
+        ],
+        ["Filter end time",
+         datetime.fromtimestamp(end).strftime("%m/%d/%Y"),
+         datetime.fromtimestamp(end).strftime("%I:%M:%S %p")
+        ],
+        [],
+        []
+    ]
+    export_table = info_table + export_table
+
+
+    savefile = "output.csv"
+    with open(savefile, "w") as f:
+        csv.writer(f, lineterminator="\n").writerows(export_table)
 
     print()
-    print("COMPLETE")
-    print("saved to TODO")
     print()
+    print(f"output saved to\t{savefile}")
+    print()
+    print("press ENTER to continue")
+    print()
+    input()
 
 
 
