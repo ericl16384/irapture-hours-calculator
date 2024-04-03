@@ -167,6 +167,16 @@ def get_time_from_sheet(date, time):
     t_str = t_str[:-3]
 
     t = 0
+    
+    if am_pm == "AM":
+        pass
+    elif am_pm == "PM":
+        # add 12 hours
+        t += 60*60*12
+    else:
+        # assert False
+        t_str = f"{date} {time}"
+
     for format in (
         "%m/%d/%Y %H:%M:%S",
         "%m/%d/%Y %H:%M"
@@ -176,17 +186,12 @@ def get_time_from_sheet(date, time):
             break
         except ValueError:
             pass
+        except OSError:
+            print(f"WARNING: OSError in strptime; ignoring ({date}) ({time})")
 
     if t == 0:
-        print(f"WARNING: bad time stamp detected; ignoring ({date}, {time})")
+        print(f"WARNING: bad time stamp detected; ignoring ({date}) ({time})")
 
-    if am_pm == "AM":
-        pass
-    elif am_pm == "PM":
-        # add 12 hours
-        t += 60*60*12
-    else:
-        assert False
     return t
 
 
@@ -242,7 +247,11 @@ while True:
 
             # print(f"{date}\t{in_time}\t{out_time}")
 
-            hours = float(hours)
+            try:
+                hours = float(hours)
+            except ValueError:
+                print(f"WARNING: bad hours format; ignoring ({hours})")
+                continue
 
             if person not in hours_by_sheet[title]:
                 hours_by_sheet[title][person] = 0
