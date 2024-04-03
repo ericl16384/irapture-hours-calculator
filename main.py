@@ -1,8 +1,8 @@
 print("loading libraries")
 
-# import json
 import time, datetime
 import os.path
+import csv
 
 import gspread
 
@@ -116,7 +116,7 @@ for organization, list in index:
     sheets[list] = load_sheet_data(list)
 
     # debug
-    if len(sheets) == 3:
+    if len(sheets) == 2:
         break
 
 
@@ -124,28 +124,89 @@ def get_time_from_user(msg):
     valid = False
     while not valid:
         ans = input(msg)
-        try:
-            dt_object = datetime.datetime.strptime(ans, "%Y-%m-%d %H:%M:%S")
-            return dt_object.timestamp()
-        except ValueError:
-            pass
-        except OSError:
-            pass
+        if not ans:
+            return None
+        for format in (
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%d %H:%M",
+            "%Y-%m-%d %H",
+            "%Y-%m-%d",
+            "%Y-%m",
+            "%Y",
+        ):
+            try:
+                return datetime.datetime.strptime(ans, format).timestamp()
+            except ValueError:
+                pass
         print()
-        print("please enter in this format: YYYY-MM-DD HH:MM:SS")
+        print("please enter in this format (ENTER to autocomplete):")
+        print("\tYYYY-MM-DD HH:MM:SS")
 
 
+print()
 print(f"{len(sheets)} datasheets loaded")
 print()
-print("please enter timeframe")
-start = get_time_from_user("start:\t")
-end = get_time_from_user("end:\t")
 
-print()
-print(f"start: {start}")
-print(f"end: {end}")
 
-assert start < end
+# import json
+# with open("dumps.json", "w") as f:
+#     f.write(json.dumps(sheets, indent=2))
+
+
+while True:
+    print("please enter timeframe")
+    start = get_time_from_user("start:\t")
+    end = get_time_from_user("end:\t")
+
+    if not start:
+        start = 0
+    if not end:
+        end = 2**64
+
+    # print()
+    # print(f"start: {start}")
+    # print(f"end: {end}")
+
+    if start >= end:
+        print("start time must be before end time")
+        continue
+
+    print("calculating...")
+
+
+    people = {}
+
+    for title, sheet in sheets.items():
+        if title.startswith("."):
+            continue
+
+        for i, row in enumerate(sheet):
+            if i < 6:
+                continue
+
+            # if time range is valid
+
+            person = row[1]
+            hours = row[4]
+
+            if not person or not hours:
+                continue
+
+            hours = float(hours)
+
+            if person not in people:
+                people[person] = 0
+            people[person] += hours
+
+            # print(row)
+            # input()
+
+    print(people)
+
+    print()
+    print("COMPLETE")
+    print("saved to TODO")
+    print()
 
 
 
