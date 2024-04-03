@@ -149,7 +149,7 @@ def get_time_from_user(msg):
 
 
 print()
-print(datetime.timestamp(datetime.now() - PROGRAM_START_TIMESTAMP), "seconds elapsed")
+print(datetime.timestamp(datetime.now()) - PROGRAM_START_TIMESTAMP, "seconds elapsed")
 print(len(sheets), "datasheets loaded")
 print()
 print("HINT: DO NOT CLOSE PROGRAM, BUT INSTEAD KEEP IT OPEN BETWEEN SEARCHES")
