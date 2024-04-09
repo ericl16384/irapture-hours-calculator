@@ -116,18 +116,9 @@ for organization, list in index:
     if list == "list":
         continue
 
-    # debug!!
-    import random
-    if random.random() > 0.1:
-        continue
-
     print(list, "\t", organization)
 
     sheets[list] = load_sheet_data(list)
-
-    # # debug
-    # if len(sheets) == 5:
-    #     break
 
 
 def get_time_from_user(msg):
@@ -320,7 +311,6 @@ while True:
         name, title = row
         for person in export_table[0][2:]:
 
-            # debug
             if title not in hours_by_sheet:
                 export_table[i].append("")
                 continue
