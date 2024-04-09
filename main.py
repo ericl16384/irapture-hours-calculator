@@ -116,6 +116,11 @@ for organization, list in index:
     if list == "list":
         continue
 
+    # debug!!
+    import random
+    if random.random() > 0.1:
+        continue
+
     print(list, "\t", organization)
 
     sheets[list] = load_sheet_data(list)
@@ -187,12 +192,18 @@ def get_time_from_sheet(date, time):
         except ValueError:
             pass
         except OSError:
-            print(f"WARNING: OSError in strptime; ignoring ({date}) ({time})")
+            # print(f"WARNING: OSError in strptime; ignoring ({date}) ({time})")
+            return f"WARNING: OSError in strptime; ignoring ({date}) ({time})"
 
     if t == 0:
-        print(f"WARNING: bad time stamp detected; ignoring ({date}) ({time})")
+        # print(f"WARNING: bad time stamp detected; ignoring ({date}) ({time})")
+        return f"WARNING: bad time stamp detected; ignoring ({date}) ({time})"
 
     return t
+
+def coord_to_cell_id(column_x, row_y):
+    letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    return letters[column_x] + str(row_y+1)
 
 
 while True:
@@ -214,6 +225,10 @@ while True:
         continue
 
     print("calculating...")
+
+
+    # datasheet_id, cell, msg
+    spreadsheet_errors = []
 
 
     hours_by_sheet = {}
@@ -241,6 +256,22 @@ while True:
             in_stamp = get_time_from_sheet(date, in_time)
             out_stamp = get_time_from_sheet(date, out_time)
 
+            # handle errors
+            if isinstance(in_stamp, str):
+                spreadsheet_errors.append((
+                    title,
+                    f"{coord_to_cell_id(0, i)}, {coord_to_cell_id(2, i)}",
+                    in_stamp
+                ))
+                continue
+            if isinstance(out_stamp, str):
+                spreadsheet_errors.append((
+                    title,
+                    f"{coord_to_cell_id(0, i)}, {coord_to_cell_id(3, i)}",
+                    out_stamp
+                ))
+                continue
+
             if in_stamp < start or out_stamp > end:
                 # means that it was excluded by the time selection
                 continue
@@ -250,7 +281,11 @@ while True:
             try:
                 hours = float(hours)
             except ValueError:
-                print(f"WARNING: bad hours format; ignoring ({hours})")
+                # print(f"WARNING: bad hours format; ignoring ({hours})")
+                spreadsheet_errors.append((
+                    title, coord_to_cell_id(4, i),
+                    f"WARNING: bad hours format; ignoring ({hours})"
+                ))
                 continue
 
             if person not in hours_by_sheet[title]:
@@ -315,6 +350,18 @@ while True:
         export_table[i].append(v)
 
 
+    # error log (added above table)
+    print()
+    print()
+    if(spreadsheet_errors):
+        print(f"{len(spreadsheet_errors)} errors ignored (hours not processed and invalidated)")
+        spreadsheet_errors = [["Datasheet", "Cell", "Error message"]] + spreadsheet_errors
+    else:
+        print("No spreadsheet errors! Great job!")
+        spreadsheet_errors = [["No spreadsheet errors detected! Great!"]]
+    export_table = spreadsheet_errors + [[], []] + export_table
+
+
     # info (added above table)
     info_table = [
         ["https://github.com/ericl16384/irapture-hours-calculator"],
@@ -333,7 +380,6 @@ while True:
          datetime.fromtimestamp(end).strftime("%m/%d/%Y"),
          datetime.fromtimestamp(end).strftime("%I:%M:%S %p")
         ],
-        [],
         []
     ]
     export_table = info_table + export_table
