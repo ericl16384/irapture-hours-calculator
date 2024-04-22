@@ -84,7 +84,6 @@ sheets_list = sh.worksheets()
 
 # sh.values_batch_get()
 
-
 def load_sheet_data(title):
     base_delay = 1
     delay = base_delay
@@ -97,7 +96,13 @@ def load_sheet_data(title):
                 data = sheet.get_all_values()
             else:
                 sheet = sh.worksheet(title)
-        except:
+        except gspread.exceptions.WorksheetNotFound:
+            print("Worksheet not found (from <list>):")
+            print(f"  Hour ID: \"{title}\"")
+            input("press ENTER to skip error")
+            return []
+        except gspread.exceptions.APIError:
+            # this seems to be when there are too many requests
             print("waiting", delay, "seconds")
             time.sleep(delay)
             delay *= 2
@@ -108,17 +113,22 @@ def load_sheet_data(title):
 
 
 print("loading index list")
-
 index = sh.worksheet("list").get_all_values()
 
+print("loading datasheets from list")
 sheets = {}
-for organization, list in index:
-    if list == "list":
+for i, line in enumerate(index):
+    hour_id, organization = line
+
+    # if list == "list":
+    if i < 3: # skip the refresh button and header
         continue
 
-    print(list, "\t", organization)
+    # print(" ", list, "\t", organization)
+    print(line)
+    # time.sleep(0.01)
 
-    sheets[list] = load_sheet_data(list)
+    sheets[hour_id] = load_sheet_data(hour_id)
 
 
 def get_time_from_user(msg):
