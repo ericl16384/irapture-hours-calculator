@@ -404,7 +404,7 @@ while True:
             continue
 
         # try:
-        print(export_table[i][1:])
+        # print(export_table[i][1:])
         v = sum(export_table[i][1:])
         # except TypeError:
         #     v = ""
