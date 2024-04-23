@@ -1,3 +1,18 @@
+
+
+
+
+DEBUG_MODE = False
+
+
+# DEBUG
+if DEBUG_MODE:
+    import random
+    print("DEBUG MODE")
+    input("> ")
+
+
+
 print("loading libraries")
 
 from datetime import datetime
@@ -84,23 +99,81 @@ sheets_list = sh.worksheets()
 
 # sh.values_batch_get()
 
-def load_sheet_data(title):
+# def load_sheet_data(title):
+#     base_delay = 1
+#     delay = base_delay
+
+#     sheet = None
+#     data = None
+#     while data == None:
+#         try:
+#             if sheet:
+#                 data = sheet.get_all_values()
+#             else:
+#                 sheet = sh.worksheet(title)
+#         except gspread.exceptions.WorksheetNotFound:
+#             print("Worksheet not found (from <list>):")
+#             print(f"  Hour ID: \"{title}\"")
+#             input("press ENTER to skip error")
+#             return []
+#         except gspread.exceptions.APIError:
+#             # this seems to be when there are too many requests
+#             print("waiting", delay, "seconds")
+#             time.sleep(delay)
+#             delay *= 2
+#             continue
+#         delay = base_delay
+    
+#     return data
+
+
+# print("loading index list")
+# index = sh.worksheet("list").get_all_values()
+
+print("loading datasheets from list")
+sheets = {}
+# for i, line in enumerate(index):
+#     hour_id, organization = line
+
+#     # if list == "list":
+#     if i < 3: # skip the refresh button and header
+#         continue
+
+#     # print(" ", list, "\t", organization)
+#     print(line)
+#     # time.sleep(0.01)
+
+#     sheets[hour_id] = load_sheet_data(hour_id)
+for worksheet in sh.worksheets():
+    title = worksheet.title
+    if title == "list":
+        continue
+    if title.startswith("."):
+        continue
+
+    if DEBUG_MODE and random.random() > 0.1:
+        continue
+
+    print(" ", title)
+
+
     base_delay = 1
     delay = base_delay
 
-    sheet = None
+    # sheet = None
+    sheet = worksheet
     data = None
     while data == None:
         try:
-            if sheet:
-                data = sheet.get_all_values()
-            else:
-                sheet = sh.worksheet(title)
-        except gspread.exceptions.WorksheetNotFound:
-            print("Worksheet not found (from <list>):")
-            print(f"  Hour ID: \"{title}\"")
-            input("press ENTER to skip error")
-            return []
+            # if sheet:
+            data = sheet.get_all_values()
+            # else:
+            #     sheet = sh.worksheet(title)
+        # except gspread.exceptions.WorksheetNotFound:
+        #     print("Worksheet not found (from <list>):")
+        #     print(f"  Hour ID: \"{title}\"")
+        #     input("press ENTER to skip error")
+        #     return []
         except gspread.exceptions.APIError:
             # this seems to be when there are too many requests
             print("waiting", delay, "seconds")
@@ -108,27 +181,9 @@ def load_sheet_data(title):
             delay *= 2
             continue
         delay = base_delay
-    
-    return data
 
-
-print("loading index list")
-index = sh.worksheet("list").get_all_values()
-
-print("loading datasheets from list")
-sheets = {}
-for i, line in enumerate(index):
-    hour_id, organization = line
-
-    # if list == "list":
-    if i < 3: # skip the refresh button and header
-        continue
-
-    # print(" ", list, "\t", organization)
-    print(line)
-    # time.sleep(0.01)
-
-    sheets[hour_id] = load_sheet_data(hour_id)
+    # return data
+    sheets[title] = data
 
 
 def get_time_from_user(msg):
@@ -306,8 +361,9 @@ while True:
     export_table = []
 
     # Organization, list
-    for row in index:
-        export_table.append(row[:2])
+    export_table.append(["client\\dev"])
+    for client in sheets:
+        export_table.append([client])
 
     # header
     for person in totals_by_person:
@@ -318,8 +374,8 @@ while True:
         if i == 0:
             continue
 
-        name, title = row
-        for person in export_table[0][2:]:
+        title = row[0]
+        for person in export_table[0][1:]:
 
             if title not in hours_by_sheet:
                 export_table[i].append("")
@@ -333,20 +389,25 @@ while True:
             export_table[i].append(h)
 
     # person totals
-    export_table.append(["TOTAL", ""])
-    for person in export_table[0][2:]:
-        export_table[-1].append(totals_by_person[person])
-    
+    export_table.append([""]*len(export_table[0]))
+    export_table[-1][0] = "TOTAL"
+    for i, person in enumerate(export_table[0]):
+        if i == 0:
+            continue
+        export_table[-1][i] = totals_by_person[person]
+        # assert totals_by_person[person] == sum([row[i] for row in export_table[1:]])
+
     # sheet (row) totals
     export_table[0].append("TOTAL")
     for i, row in enumerate(export_table):
-        if i < 1:
+        if i == 0:
             continue
 
-        try:
-            v = sum(export_table[i][2:])
-        except TypeError:
-            v = ""
+        # try:
+        print(export_table[i][1:])
+        v = sum(export_table[i][1:])
+        # except TypeError:
+        #     v = ""
         export_table[i].append(v)
 
 
