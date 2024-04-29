@@ -146,7 +146,7 @@ sheets = {}
 #     sheets[hour_id] = load_sheet_data(hour_id)
 for worksheet in sh.worksheets():
     title = worksheet.title
-    if title == "list":
+    if title == "Index":
         continue
     if title.startswith("."):
         continue
@@ -297,17 +297,43 @@ while True:
         hours_by_sheet[title] = {}
 
         for i, row in enumerate(sheet):
+            # header
             if i < 6:
                 continue
 
-            if "" in row[:5]:
+            if "".join(row) == "":
+                # spreadsheet_errors.append((title,
+                #     f"{coord_to_cell_id(0, i)}:{coord_to_cell_id(4, i)}",
+                #     "WARNING: empty sheet row; ignoring"
+                # ))
                 continue
+            if "".join(row[:4]) == "":
+                try:
+                    if float(row[4]) == 0:
+                        continue
+                except:
+                    pass
+
+            if len(row) < 5 or "" in row[:5]:
+                spreadsheet_errors.append((title,
+                    f"{coord_to_cell_id(0, i)}:{coord_to_cell_id(4, i)}",
+                    "WARNING: incomplete sheet row; ignoring"
+                ))
+                continue
+
+            # if "" in row[:5]:
+            #     continue
 
             date = row[0]
             person = row[1]
             in_time = row[2]
             out_time = row[3]
             hours = row[4]
+
+            # if not in_time:
+            #     in_time = "12:00:00 PM"
+            # if not out_time:
+            #     out_time = "12:00:00 PM"
 
             in_stamp = get_time_from_sheet(date, in_time)
             out_stamp = get_time_from_sheet(date, out_time)
