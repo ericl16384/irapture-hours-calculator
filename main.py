@@ -19,6 +19,7 @@ from datetime import datetime
 import time
 import os.path
 import csv
+import json
 
 import gspread
 
@@ -260,6 +261,10 @@ def get_time_from_sheet(date, time):
 def coord_to_cell_id(column_x, row_y):
     letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     return letters[column_x] + str(row_y+1)
+
+
+with open("output.json", "w") as f:
+    f.write(json.dumps(sheets, indent=2))
 
 
 while True:
