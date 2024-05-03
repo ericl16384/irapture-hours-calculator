@@ -155,6 +155,17 @@ for worksheet in sh.worksheets():
     if DEBUG_MODE and random.random() > 0.1:
         continue
 
+
+
+
+
+    # if title != "ec":
+    #     continue
+
+
+
+
+
     print(" ", title)
 
 
@@ -225,23 +236,26 @@ print()
 
 def get_time_from_sheet(date, time):
     t_str = f"{date} {time}"
-    am_pm = time[-2:]
-    t_str = t_str[:-3]
+    # am_pm = time[-2:]
+    # t_str = t_str[:-3]
 
     t = 0
     
-    if am_pm == "AM":
-        pass
-    elif am_pm == "PM":
-        # add 12 hours
-        t += 60*60*12
-    else:
-        # assert False
-        t_str = f"{date} {time}"
+    # if am_pm == "AM":
+    #     pass
+    # elif am_pm == "PM":
+    #     # add 12 hours
+    #     t += 60*60*12
+    # else:
+    #     # assert False
+    #     t_str = f"{date} {time}"
 
     for format in (
-        "%m/%d/%Y %H:%M:%S",
-        "%m/%d/%Y %H:%M"
+        "%m/%d/%Y %H:%M:%S %p",
+        "%m/%d/%Y %H:%M %p",
+
+        # "%m/%d/%Y %H:%M:%S",
+        # "%m/%d/%Y %H:%M",
     ):
         try:
             t += datetime.strptime(t_str, format).timestamp()
@@ -359,6 +373,12 @@ while True:
                 ))
                 continue
 
+            # print()
+            # print(start, datetime.fromtimestamp(start).strftime("%m/%d/%Y %I:%M:%S %p"))
+            # print(in_stamp, datetime.fromtimestamp(in_stamp).strftime("%m/%d/%Y %I:%M:%S %p"))
+            # print(out_stamp, datetime.fromtimestamp(out_stamp).strftime("%m/%d/%Y %I:%M:%S %p"))
+            # print(end, datetime.fromtimestamp(end).strftime("%m/%d/%Y %I:%M:%S %p"))
+
             if in_stamp < start or out_stamp > end:
                 # means that it was excluded by the time selection
                 continue
@@ -460,8 +480,6 @@ while True:
         ["https://docs.google.com/spreadsheets/d/1WjSQnzFIqTKtnKVx5O19OxBul2MoiAgyy1iYgFn495s/edit#gid=287905941"],
         [],
         ["Program run time",
-         datetime.fromtimestamp(PROGRAM_START_TIMESTAMP).strftime("%m/%d/%Y"),
-         datetime.fromtimestamp(PROGRAM_START_TIMESTAMP).strftime("%I:%M:%S %p"),
         ],
         [],
         ["Filter start time",
