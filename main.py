@@ -221,8 +221,11 @@ def get_time_from_user(msg):
         print("\tYYYY-MM-DD HH:MM:SS")
 
 
+PROGRAM_RUN_SECONDS = datetime.timestamp(datetime.now()) - PROGRAM_START_TIMESTAMP
+
+
 print()
-print(datetime.timestamp(datetime.now()) - PROGRAM_START_TIMESTAMP, "seconds elapsed")
+print(PROGRAM_RUN_SECONDS, "seconds elapsed")
 print(len(sheets), "datasheets loaded")
 print()
 print("HINT: DO NOT CLOSE PROGRAM, BUT INSTEAD KEEP IT OPEN BETWEEN SEARCHES")
@@ -309,6 +312,11 @@ while True:
     hours_by_sheet = {}
     totals_by_person = {}
 
+
+    time_per_month_by_sheet = {}
+    remaining_hours_by_sheet = {}
+
+
     for title, sheet in sheets.items():
         if title.startswith("."):
             continue
@@ -316,6 +324,55 @@ while True:
         hours_by_sheet[title] = {}
 
         for i, row in enumerate(sheet):
+            # add "Time per month" from E3:E4
+            if i == 2:
+                if len(row) < 5:
+                    remaining_hours_by_sheet[title] = "row 3 too short"
+                elif row[4] == "Time per month":
+                    time_per_month_by_sheet[title] = "loading..."
+                else:
+                    time_per_month_by_sheet[title] = "wrong format"
+            if i == 3:
+                if time_per_month_by_sheet[title] == "row 3 too short":
+                    pass
+                elif time_per_month_by_sheet[title] == "loading...":
+                    time_per_month_by_sheet[title] = row[4]
+                    if time_per_month_by_sheet[title] == "":
+                        time_per_month_by_sheet[title] = "MISSING"
+                        spreadsheet_errors.append((
+                            title,
+                            "E3:E4",
+                            "Value for `Time per month` in header is missing"
+                        ))
+                elif time_per_month_by_sheet[title] == "wrong format":
+                    pass
+                else:
+                    assert False
+            # add "Remaining hours" from I3:I4
+            if i == 2:
+                if len(row) < 9:
+                    remaining_hours_by_sheet[title] = "row 3 too short"
+                elif row[8] == "Remaining hours":
+                    remaining_hours_by_sheet[title] = "loading..."
+                else:
+                    remaining_hours_by_sheet[title] = "wrong format"
+            if i == 3:
+                if remaining_hours_by_sheet[title] == "row 3 too short":
+                    pass
+                elif remaining_hours_by_sheet[title] == "loading...":
+                    remaining_hours_by_sheet[title] = row[8]
+                    if remaining_hours_by_sheet[title] == "":
+                        remaining_hours_by_sheet[title] = "MISSING"
+                        spreadsheet_errors.append((
+                            title,
+                            "I3:I4",
+                            "Value for `Remaining hours` in header is missing"
+                        ))
+                elif remaining_hours_by_sheet[title] == "wrong format":
+                    pass
+                else:
+                    assert False
+
             # header
             if i < 6:
                 continue
@@ -334,7 +391,8 @@ while True:
                     pass
 
             if len(row) < 5 or "" in row[:5]:
-                spreadsheet_errors.append((title,
+                spreadsheet_errors.append((
+                    title,
                     f"{coord_to_cell_id(0, i)}:{coord_to_cell_id(4, i)}",
                     "WARNING: incomplete sheet row; ignoring"
                 ))
@@ -390,7 +448,8 @@ while True:
             except ValueError:
                 # print(f"WARNING: bad hours format; ignoring ({hours})")
                 spreadsheet_errors.append((
-                    title, coord_to_cell_id(4, i),
+                    title,
+                    coord_to_cell_id(4, i),
                     f"WARNING: bad hours format; ignoring ({hours})"
                 ))
                 continue
@@ -439,7 +498,7 @@ while True:
                 h = 0
             export_table[i].append(h)
 
-    # person totals
+    # person (column) totals
     export_table.append([""]*len(export_table[0]))
     export_table[-1][0] = "TOTAL"
     for i, person in enumerate(export_table[0]):
@@ -461,6 +520,20 @@ while True:
         #     v = ""
         export_table[i].append(v)
 
+    # add "Time per month" from E3:E4 and add "Remaining hours" from I3:I4
+    export_table[0].append("Time per month")
+    export_table[0].append("Remaining hours")
+    for i, row in enumerate(export_table):
+        if i == 0:
+            continue
+
+        if row[0] == "TOTAL":
+            export_table[i].append("N/A")
+            export_table[i].append("N/A")
+            continue
+
+        export_table[i].append(time_per_month_by_sheet[row[0]])
+        export_table[i].append(remaining_hours_by_sheet[row[0]])
 
     # error log (added above table)
     print()
@@ -479,16 +552,24 @@ while True:
         ["https://github.com/ericl16384/irapture-hours-calculator"],
         ["https://docs.google.com/spreadsheets/d/1WjSQnzFIqTKtnKVx5O19OxBul2MoiAgyy1iYgFn495s/edit#gid=287905941"],
         [],
-        ["Program run time",
+        [
+            "Program run time",
+            datetime.fromtimestamp(PROGRAM_START_TIMESTAMP).strftime("%m/%d/%Y"),
+            datetime.fromtimestamp(PROGRAM_START_TIMESTAMP).strftime("%I:%M:%S %p")
+        ],
+        [
+            "Program load time elapsed (seconds)",
+            PROGRAM_RUN_SECONDS
         ],
         [],
-        ["Filter start time",
-         datetime.fromtimestamp(start).strftime("%m/%d/%Y"),
-         datetime.fromtimestamp(start).strftime("%I:%M:%S %p")
+        [
+            "Filter start time",
+            datetime.fromtimestamp(start).strftime("%m/%d/%Y"),
+            datetime.fromtimestamp(start).strftime("%I:%M:%S %p")
         ],
-        ["Filter end time",
-         datetime.fromtimestamp(end).strftime("%m/%d/%Y"),
-         datetime.fromtimestamp(end).strftime("%I:%M:%S %p")
+        [   "Filter end time",
+            datetime.fromtimestamp(end).strftime("%m/%d/%Y"),
+            datetime.fromtimestamp(end).strftime("%I:%M:%S %p")
         ],
         []
     ]
