@@ -309,6 +309,9 @@ while True:
     spreadsheet_errors = []
 
 
+    invoice_categorization = {}
+
+
     hours_by_sheet = {}
     totals_by_person = {}
 
@@ -376,6 +379,14 @@ while True:
             # header
             if i < 6:
                 continue
+
+            # record which clients are VP vs Hourly for Heather's billing
+            invoice = row[5]
+            if invoice not in invoice_categorization:
+                invoice_categorization[invoice] = []
+            invoice_categorization[invoice].append(title)
+
+
 
             if "".join(row) == "":
                 # spreadsheet_errors.append((title,
@@ -466,6 +477,27 @@ while True:
             # input()
 
 
+    # record which clients are VP vs Hourly for Heather's billing
+    invoice_export_table = [("Invoice msg", "Sheet title", "Sequence length")]
+    categories = ["", "HOURLY"]
+    categories.extend(invoice_categorization.keys())
+    for category in categories:
+        if category not in invoice_categorization:
+            continue
+        sequence_length = 0
+        for title in invoice_categorization[category]:
+            sequence_length += 1
+            row = (category, title, sequence_length)
+            if invoice_export_table[-1][:2] == row[:2]:
+                continue
+            invoice_export_table.append(row)
+        del invoice_categorization[category]
+    invoice_tracker_file = "invoice_types.csv"
+    with open(invoice_tracker_file, "w") as f:
+        csv.writer(f, lineterminator="\n").writerows(invoice_export_table)
+
+
+
     # print(hours_by_sheet)
 
     export_table = []
@@ -539,7 +571,7 @@ while True:
     print()
     print()
     if(spreadsheet_errors):
-        print(f"{len(spreadsheet_errors)} errors ignored (hours not processed and invalidated)")
+        print(f"{len(spreadsheet_errors)} errors logged and ignored (hours not processed and invalidated)")
         spreadsheet_errors = [["Datasheet", "Cell", "Error message"]] + spreadsheet_errors
     else:
         print("No spreadsheet errors! Great job!")
@@ -583,6 +615,7 @@ while True:
     print()
     print()
     print(f"output saved to\t{savefile}")
+    print(f"invoice categorization saved to\t{invoice_tracker_file}")
     print()
     print("press ENTER to continue")
     print()
