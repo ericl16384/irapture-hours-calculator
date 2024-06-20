@@ -380,14 +380,6 @@ while True:
             if i < 6:
                 continue
 
-            # record which clients are VP vs Hourly for Heather's billing
-            invoice = row[5]
-            if invoice not in invoice_categorization:
-                invoice_categorization[invoice] = []
-            invoice_categorization[invoice].append(title)
-
-
-
             if "".join(row) == "":
                 # spreadsheet_errors.append((title,
                 #     f"{coord_to_cell_id(0, i)}:{coord_to_cell_id(4, i)}",
@@ -475,21 +467,30 @@ while True:
 
             # print(row)
             # input()
+            
+            # record which clients are VP vs Hourly for Heather's billing
+            invoice = row[5]
+            if invoice not in invoice_categorization:
+                invoice_categorization[invoice] = []
+            invoice_categorization[invoice].append((title, i))
 
 
     # record which clients are VP vs Hourly for Heather's billing
-    invoice_export_table = [("Invoice msg", "Sheet title", "Sequence length")]
+    invoice_export_table = [("Invoice msg", "Sheet title", "Row")]
     categories = ["", "HOURLY"]
     categories.extend(invoice_categorization.keys())
     for category in categories:
         if category not in invoice_categorization:
             continue
-        sequence_length = 0
-        for title in invoice_categorization[category]:
-            sequence_length += 1
-            row = (category, title, sequence_length)
-            if invoice_export_table[-1][:2] == row[:2]:
-                continue
+        # sequence_length = 1
+        for title, row in invoice_categorization[category]:
+            # if invoice_export_table[-1][:2] == row:
+            #     sequence_length += 1
+            #     continue
+            # else:
+            #     sequence_length = 1
+            # row = (category, title, sequence_length)
+            row = (category, title, row+1)
             invoice_export_table.append(row)
         del invoice_categorization[category]
     invoice_tracker_file = "invoice_types.csv"
