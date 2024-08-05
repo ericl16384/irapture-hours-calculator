@@ -396,7 +396,10 @@ while True:
     export_table.append(["client", "project"])
     static_columns = len(export_table[0])
     for client in sheets:
-        project = ",".join(sorted(list(projects_by_sheet[client])))
+        if client in projects_by_sheet:
+            project = ",".join(sorted(list(projects_by_sheet[client])))
+        else:
+            project = ""
         export_table.append([client, project])
 
     # header
