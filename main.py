@@ -196,6 +196,8 @@ while True:
     hours_by_sheet = {}
     totals_by_person = {}
 
+    projects_by_sheet = {}
+
 
     time_per_month_by_sheet = {}
     remaining_hours_by_sheet = {}
@@ -348,12 +350,18 @@ while True:
 
             # print(row)
             # input()
-            
+
             # record which clients are VP vs Hourly for Heather's billing
             invoice = row[5]
             if invoice not in invoice_categorization:
                 invoice_categorization[invoice] = []
             invoice_categorization[invoice].append((title, i))
+
+            # determine if project column is vp or hourly
+            project = row[6].lower()
+            if title not in projects_by_sheet:
+                projects_by_sheet[title] = set()
+            projects_by_sheet[title].add(project)
 
 
     # record which clients are VP vs Hourly for Heather's billing
@@ -384,10 +392,12 @@ while True:
 
     export_table = []
 
-    # Organization, list
-    export_table.append(["client\\dev"])
+    # first columns
+    export_table.append(["client", "project"])
+    static_columns = len(export_table[0])
     for client in sheets:
-        export_table.append([client])
+        project = ",".join(sorted(list(projects_by_sheet[client])))
+        export_table.append([client, project])
 
     # header
     for person in totals_by_person:
@@ -399,7 +409,7 @@ while True:
             continue
 
         title = row[0]
-        for person in export_table[0][1:]:
+        for person in export_table[0][static_columns:]:
 
             if title not in hours_by_sheet:
                 export_table[i].append("")
@@ -416,7 +426,7 @@ while True:
     export_table.append([""]*len(export_table[0]))
     export_table[-1][0] = "TOTAL"
     for i, person in enumerate(export_table[0]):
-        if i == 0:
+        if i < static_columns:
             continue
         export_table[-1][i] = totals_by_person[person]
         # assert totals_by_person[person] == sum([row[i] for row in export_table[1:]])
@@ -429,7 +439,7 @@ while True:
 
         # try:
         # print(export_table[i][1:])
-        v = sum(export_table[i][1:])
+        v = sum(export_table[i][static_columns:])
         # except TypeError:
         #     v = ""
         export_table[i].append(v)
