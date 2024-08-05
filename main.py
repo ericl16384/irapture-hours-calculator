@@ -29,122 +29,34 @@ assert os.path.isfile("./google_cloud_key.json"), "Missing Google Cloud key. Con
 PROGRAM_START_TIMESTAMP = datetime.timestamp(datetime.now())
 
 
+def manage_request_overload(lambda_web_api_request):
+    delay = 1
+    while True:
+        try:
+            return lambda_web_api_request()
+        except gspread.exceptions.APIError as err:
+            # this seems to be when there are too many requests
+            print("waiting", delay, "seconds", "due to error:")
+            print(" ", str(err))
+            time.sleep(delay)
+            delay *= 2
+
+
 print("authenticating")
 
 # Authenticate (no need for full edit permissions)
 gc = gspread.service_account(filename="google_cloud_key.json")
 
-sh = gc.open_by_key("1WjSQnzFIqTKtnKVx5O19OxBul2MoiAgyy1iYgFn495s")
+sh = manage_request_overload(
+    lambda: gc.open_by_key("1WjSQnzFIqTKtnKVx5O19OxBul2MoiAgyy1iYgFn495s")
+)
+
 
 sheets_list = sh.worksheets()
 
 
-
-# if os.path.isfile("download_history.json"):
-#     with open("download_history.json", "r") as f:
-#         history = json.loads(f.read())
-# else:
-#     history = {}
-
-# for s in sheets_list:
-#     if s.id not in history.keys():
-#         history[s.id] = {
-#             "title": s.title,
-#             "last_download": 0
-#         }
-
-# def save_history():
-#     with open("download_history.json", "w") as f:
-#         f.write(json.dumps(history, indent=2))
-# save_history()
-
-
-
-# print("working here")
-# input()
-
-
-# to_download = []
-# for gid in history:
-#     if history[gid]["last_download"] == 0:
-#         to_download.append(gid)
-# print(f"downloading {len(to_download)} datasheets")
-
-# if not os.path.isdir("downloads"):
-#     os.mkdir("downloads")
-
-# base_download_delay = 0.001
-# download_delay = base_download_delay
-# def download_sheet(gid):
-#     sh.get_worksheet(s).get_all_values()
-
-
-
-
-
-# def refresh_downloads():
-#     delay = 1
-#     for gid in history:
-#         sh.get_worksheet(s).get_all_values()
-# refresh_downloads()
-
-
-
-# with open("downloads/test.txt", "w") as f:
-#     f.write("Hello World!")
-
-# input()
-
-# print(sheets_list)
-# assert False
-
-# sh.values_batch_get()
-
-# def load_sheet_data(title):
-#     base_delay = 1
-#     delay = base_delay
-
-#     sheet = None
-#     data = None
-#     while data == None:
-#         try:
-#             if sheet:
-#                 data = sheet.get_all_values()
-#             else:
-#                 sheet = sh.worksheet(title)
-#         except gspread.exceptions.WorksheetNotFound:
-#             print("Worksheet not found (from <list>):")
-#             print(f"  Hour ID: \"{title}\"")
-#             input("press ENTER to skip error")
-#             return []
-#         except gspread.exceptions.APIError:
-#             # this seems to be when there are too many requests
-#             print("waiting", delay, "seconds")
-#             time.sleep(delay)
-#             delay *= 2
-#             continue
-#         delay = base_delay
-    
-#     return data
-
-
-# print("loading index list")
-# index = sh.worksheet("list").get_all_values()
-
 print("loading datasheets from list")
 sheets = {}
-# for i, line in enumerate(index):
-#     hour_id, organization = line
-
-#     # if list == "list":
-#     if i < 3: # skip the refresh button and header
-#         continue
-
-#     # print(" ", list, "\t", organization)
-#     print(line)
-#     # time.sleep(0.01)
-
-#     sheets[hour_id] = load_sheet_data(hour_id)
 for worksheet in sh.worksheets():
     title = worksheet.title
     if title == "Index":
@@ -156,43 +68,12 @@ for worksheet in sh.worksheets():
         continue
 
 
-
-
-
-    # if title != "ec":
-    #     continue
-
-
-
-
-
     print(" ", title)
 
 
-    base_delay = 1
-    delay = base_delay
-
-    # sheet = None
-    sheet = worksheet
-    data = None
-    while data == None:
-        try:
-            # if sheet:
-            data = sheet.get_all_values()
-            # else:
-            #     sheet = sh.worksheet(title)
-        # except gspread.exceptions.WorksheetNotFound:
-        #     print("Worksheet not found (from <list>):")
-        #     print(f"  Hour ID: \"{title}\"")
-        #     input("press ENTER to skip error")
-        #     return []
-        except gspread.exceptions.APIError:
-            # this seems to be when there are too many requests
-            print("waiting", delay, "seconds")
-            time.sleep(delay)
-            delay *= 2
-            continue
-        delay = base_delay
+    data = manage_request_overload(
+        lambda: worksheet.get_all_values()
+    )
 
     # return data
     sheets[title] = data
