@@ -2,31 +2,43 @@
 
 
 
-DEBUG_MODE = True
 
-
-# DEBUG
-if DEBUG_MODE:
-    import random
-    print("DEBUG MODE")
-    input("> ")
+# # DEBUG
+# if DEBUG_MODE:
+#     import random
+#     print("DEBUG MODE (random sample of data, not complete)")
+#     print("press ENTER")
+#     input("> ")
 
 
 
 print("loading libraries")
 
 from datetime import datetime
-import time
-import os.path
 import csv
 import json
+import os.path
+import random
+import sys
+import time
 
 import gspread
 
-assert os.path.isfile("./google_cloud_key.json"), "Missing Google Cloud key. Contact Eric Lewis."
-
 
 PROGRAM_START_TIMESTAMP = datetime.timestamp(datetime.now())
+
+
+
+
+
+DEBUG_MODE = False
+if "--debug" in sys.argv:
+    DEBUG_MODE = True
+
+
+
+assert os.path.isfile("./google_cloud_key.json"), "Missing Google Cloud key. Contact Eric Lewis."
+
 
 
 def manage_request_overload(lambda_web_api_request):
@@ -65,6 +77,7 @@ for worksheet in sh.worksheets():
         continue
 
     if DEBUG_MODE and random.random() > 0.1:
+        print("        SKIPPED", title)
         continue
 
 
@@ -109,8 +122,12 @@ print()
 print(PROGRAM_RUN_SECONDS, "seconds elapsed")
 print(len(sheets), "datasheets loaded")
 print()
-print("HINT: DO NOT CLOSE PROGRAM, BUT INSTEAD KEEP IT OPEN BETWEEN SEARCHES")
+print("HINT: DO NOT CLOSE PROGRAM, BUT INSTEAD KEEP IT OPEN BETWEEN SEARCHES.")
 print()
+
+if DEBUG_MODE:
+    print("WARNING: DEBUG MODE ENABLED. RUN PROGRAM WITHOUT DEBUG MODE FOR ACCURATE RESULTS.")
+    print()
 
 
 # import json
