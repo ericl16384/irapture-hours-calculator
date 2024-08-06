@@ -2,7 +2,7 @@
 
 
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 
 
 # DEBUG
@@ -394,13 +394,29 @@ while True:
 
     # first columns
     export_table.append(["client", "project"])
-    static_columns = len(export_table[0])
     for client in sheets:
         if client in projects_by_sheet:
             project = ",".join(sorted(list(projects_by_sheet[client])))
         else:
             project = ""
         export_table.append([client, project])
+
+    # add "Time per month" from E3:E4 and add "Remaining hours" from I3:I4
+    export_table[0].append("Time per month")
+    export_table[0].append("Remaining hours")
+    for i, row in enumerate(export_table):
+        if i == 0:
+            continue
+
+        if row[0] == "TOTAL":
+            export_table[i].append("N/A")
+            export_table[i].append("N/A")
+            continue
+
+        export_table[i].append(time_per_month_by_sheet[row[0]])
+        export_table[i].append(remaining_hours_by_sheet[row[0]])
+        
+    static_columns = len(export_table[0])
 
     # header
     for person in totals_by_person:
@@ -446,21 +462,6 @@ while True:
         # except TypeError:
         #     v = ""
         export_table[i].append(v)
-
-    # add "Time per month" from E3:E4 and add "Remaining hours" from I3:I4
-    export_table[0].append("Time per month")
-    export_table[0].append("Remaining hours")
-    for i, row in enumerate(export_table):
-        if i == 0:
-            continue
-
-        if row[0] == "TOTAL":
-            export_table[i].append("N/A")
-            export_table[i].append("N/A")
-            continue
-
-        export_table[i].append(time_per_month_by_sheet[row[0]])
-        export_table[i].append(remaining_hours_by_sheet[row[0]])
 
     # error log (added above table)
     print()
