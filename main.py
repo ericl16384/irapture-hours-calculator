@@ -34,6 +34,16 @@ PROGRAM_START_TIMESTAMP = datetime.timestamp(datetime.now())
 DEBUG_MODE = False
 if "--debug" in sys.argv:
     DEBUG_MODE = True
+    print("""
+                   _      _                 
+                  | |    | |                
+  ______ ______ __| | ___| |__  _   _  __ _ 
+ |______|______/ _` |/ _ \ '_ \| | | |/ _` |
+              | (_| |  __/ |_) | |_| | (_| |
+               \__,_|\___|_.__/ \__,_|\__, |
+                                       __/ |
+                                      |___/ 
+""")
 
 
 
@@ -213,6 +223,7 @@ while True:
     hours_by_sheet = {}
     totals_by_person = {}
 
+    invoices_by_sheet = {}
     projects_by_sheet = {}
 
 
@@ -375,10 +386,12 @@ while True:
             invoice_categorization[invoice].append((title, i))
 
             # determine if project column is vp or hourly
-            project = row[6].lower()
+            if title not in invoices_by_sheet:
+                invoices_by_sheet[title] = set()
+            invoices_by_sheet[title].add(row[5].lower())
             if title not in projects_by_sheet:
                 projects_by_sheet[title] = set()
-            projects_by_sheet[title].add(project)
+            projects_by_sheet[title].add(row[6].lower())
 
 
     # record which clients are VP vs Hourly for Heather's billing
@@ -405,33 +418,43 @@ while True:
 
 
 
-    # print(hours_by_sheet)
 
-    export_table = []
 
     # first columns
-    export_table.append(["client", "project"])
+
+    export_table = [["client", "INV", "Project", "Time per month", "Remaining hours"]]
     for client in sheets:
-        if client in projects_by_sheet:
-            project = ",".join(sorted(list(projects_by_sheet[client])))
-        else:
-            project = ""
-        export_table.append([client, project])
+        export_table.append([client])
 
-    # add "Time per month" from E3:E4 and add "Remaining hours" from I3:I4
-    export_table[0].append("Time per month")
-    export_table[0].append("Remaining hours")
     for i, row in enumerate(export_table):
-        if i == 0:
-            continue
+        if i == 0: continue
+        client = row[0]
+        skip = client == "TOTAL"
 
-        if row[0] == "TOTAL":
-            export_table[i].append("N/A")
-            export_table[i].append("N/A")
-            continue
 
-        export_table[i].append(time_per_month_by_sheet[row[0]])
-        export_table[i].append(remaining_hours_by_sheet[row[0]])
+        # INV
+        if client in invoices_by_sheet and not skip:
+            row.append(",".join(sorted(list(projects_by_sheet[client]))))
+        else:
+            row.append("")
+
+        # Project
+        if client in projects_by_sheet and not skip:
+            row.append(",".join(sorted(list(projects_by_sheet[client]))))
+        else:
+            row.append("")
+        
+        # Time per month
+        if True and not skip:
+            row.append(time_per_month_by_sheet[client])
+        else:
+            row.append("")
+        
+        # Remaining hours
+        if True and not skip:
+            row.append(remaining_hours_by_sheet[client])
+        else:
+            row.append("")
         
     static_columns = len(export_table[0])
 
