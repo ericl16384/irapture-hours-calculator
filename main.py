@@ -434,7 +434,7 @@ while True:
 
         # INV
         if client in invoices_by_sheet and not skip:
-            row.append(",".join(sorted(list(projects_by_sheet[client]))))
+            row.append(",".join(sorted(list(invoices_by_sheet[client]))))
         else:
             row.append("")
 
