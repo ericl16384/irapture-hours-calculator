@@ -2,6 +2,73 @@
 
 
 
+    
+
+
+
+
+
+print("loading libraries")
+
+from datetime import datetime
+import csv
+import json
+import numpy as np
+import os.path
+import random
+import sys
+import time
+
+
+# DEBUG_MODE = False
+# if "--debug" in sys.argv:
+#     DEBUG_MODE = True
+#     print("""
+#                    _      _                 
+#                   | |    | |                
+#   ______ ______ __| | ___| |__  _   _  __ _ 
+#  |______|______/ _` |/ _ \ '_ \| | | |/ _` |
+#               | (_| |  __/ |_) | |_| | (_| |
+#                \__,_|\___|_.__/ \__,_|\__, |
+#                                        __/ |
+#                                       |___/ 
+# """)
+    
+# USE_GSPREAD = False
+# if "--gspread" in sys.argv:
+#     USE_GSPREAD = True
+
+
+
+def exit_on_user_input(*msgs):
+    print()
+    if msgs:
+        print()
+        for msg in msgs: print(msg)
+    print()
+    print("Press ENTER to exit the program.")
+    input()
+    sys.exit()
+
+def exit_prompting_installation_of_modules():
+    exit_on_user_input(
+        "Required libraries not installed. Please close this program, run install_python_modules.bat and try again.",
+        f"({os.getcwd()}\\install_python_modules.bat)"
+    )
+
+
+
+try:
+    import gspread
+    import pandas as pd
+except ModuleNotFoundError:
+    exit_prompting_installation_of_modules()
+
+
+
+
+
+
 
 # # DEBUG
 # if DEBUG_MODE:
@@ -12,94 +79,90 @@
 
 
 
-print("loading libraries")
-
-from datetime import datetime
-import csv
-import json
-import os.path
-import random
-import sys
-import time
-
-import gspread
+    
 
 
 PROGRAM_START_TIMESTAMP = datetime.timestamp(datetime.now())
+    
+
+
+
+
+# assert os.path.isfile("./google_cloud_key.json"), "Missing Google Cloud key. Contact Eric Lewis."
+
+# def manage_request_overload(lambda_web_api_request):
+#     delay = 1
+#     while True:
+#         try:
+#             return lambda_web_api_request()
+#         except gspread.exceptions.APIError as err:
+#             # this seems to be when there are too many requests
+#             print("waiting", delay, "seconds", "due to error:")
+#             print(" ", str(err))
+#             time.sleep(delay)
+#             delay *= 2
+
+
+# print("authenticating")
+
+# # Authenticate (no need for full edit permissions)
+# gc = gspread.service_account(filename="google_cloud_key.json")
+
+# sh = manage_request_overload(
+#     lambda: gc.open_by_key("1WjSQnzFIqTKtnKVx5O19OxBul2MoiAgyy1iYgFn495s")
+# )
+
+
+# sheets_list = sh.worksheets()
+
+
+# print("loading datasheets from list")
+# sheets = {}
+# for worksheet in sh.worksheets():
+#     title = worksheet.title
+#     if title == "Index":
+#         continue
+#     if title.startswith("."):
+#         continue
+
+#     if DEBUG_MODE and random.random() > 0.1:
+#         print("        SKIPPED", title)
+#         continue
+
+
+#     print(" ", title)
+
+
+#     data = manage_request_overload(
+#         lambda: worksheet.get_all_values()
+#     )
+
+#     # return data
+#     sheets[title] = data
 
 
 
 
 
-DEBUG_MODE = False
-if "--debug" in sys.argv:
-    DEBUG_MODE = True
-    print("""
-                   _      _                 
-                  | |    | |                
-  ______ ______ __| | ___| |__  _   _  __ _ 
- |______|______/ _` |/ _ \ '_ \| | | |/ _` |
-              | (_| |  __/ |_) | |_| | (_| |
-               \__,_|\___|_.__/ \__,_|\__, |
-                                       __/ |
-                                      |___/ 
-""")
+print("loading worksheets from Excel file")
 
-
-
-assert os.path.isfile("./google_cloud_key.json"), "Missing Google Cloud key. Contact Eric Lewis."
-
-
-
-def manage_request_overload(lambda_web_api_request):
-    delay = 1
-    while True:
-        try:
-            return lambda_web_api_request()
-        except gspread.exceptions.APIError as err:
-            # this seems to be when there are too many requests
-            print("waiting", delay, "seconds", "due to error:")
-            print(" ", str(err))
-            time.sleep(delay)
-            delay *= 2
-
-
-print("authenticating")
-
-# Authenticate (no need for full edit permissions)
-gc = gspread.service_account(filename="google_cloud_key.json")
-
-sh = manage_request_overload(
-    lambda: gc.open_by_key("1WjSQnzFIqTKtnKVx5O19OxBul2MoiAgyy1iYgFn495s")
-)
-
-
-sheets_list = sh.worksheets()
-
-
-print("loading datasheets from list")
-sheets = {}
-for worksheet in sh.worksheets():
-    title = worksheet.title
-    if title == "Index":
-        continue
-    if title.startswith("."):
-        continue
-
-    if DEBUG_MODE and random.random() > 0.1:
-        print("        SKIPPED", title)
-        continue
-
-
-    print(" ", title)
-
-
-    data = manage_request_overload(
-        lambda: worksheet.get_all_values()
+try:
+    # sheets = pd.read_excel("Hours.xlsx")
+    excel_worksheets = pd.ExcelFile("Hours.xlsx")
+except ImportError:
+    exit_prompting_installation_of_modules()
+except FileNotFoundError:
+    exit_on_user_input(
+        "Missing file Hours.xlsx. Please download the Hours Google sheet in Excel format and put it in this folder:",
+        os.getcwd()
     )
 
-    # return data
-    sheets[title] = data
+sheets = {}
+for sheet_name in excel_worksheets.sheet_names:
+    print(f"parsing  {sheet_name}")
+    sheets[sheet_name] = excel_worksheets.parse(sheet_name,
+        index_col=None, header=None, dtype=str, na_filter=False
+    ).replace({np.nan: ""}).values.tolist()
 
 
 def get_time_from_user(msg):
@@ -130,14 +193,15 @@ PROGRAM_RUN_SECONDS = datetime.timestamp(datetime.now()) - PROGRAM_START_TIMESTA
 
 print()
 print(PROGRAM_RUN_SECONDS, "seconds elapsed")
-print(len(sheets), "datasheets loaded")
-print()
-print("HINT: DO NOT CLOSE PROGRAM, BUT INSTEAD KEEP IT OPEN BETWEEN SEARCHES.")
+# print(len(sheets), "datasheets loaded")
+print(len(sheets), "worksheets loaded")
+# print()
+# print("HINT: DO NOT CLOSE PROGRAM, BUT INSTEAD KEEP IT OPEN BETWEEN SEARCHES.")
 print()
 
-if DEBUG_MODE:
-    print("WARNING: DEBUG MODE ENABLED. RUN PROGRAM WITHOUT DEBUG MODE FOR ACCURATE RESULTS.")
-    print()
+# if DEBUG_MODE:
+#     print("WARNING: DEBUG MODE ENABLED. RUN PROGRAM WITHOUT DEBUG MODE FOR ACCURATE RESULTS.")
+#     print()
 
 
 # import json
@@ -188,8 +252,8 @@ def coord_to_cell_id(column_x, row_y):
     return letters[column_x] + str(row_y+1)
 
 
-with open("output.json", "w") as f:
-    f.write(json.dumps(sheets, indent=2))
+# with open("output.json", "w") as f:
+#     f.write(json.dumps(sheets, indent=2))
 
 
 while True:
@@ -238,6 +302,12 @@ while True:
         hours_by_sheet[title] = {}
 
         for i, row in enumerate(sheet):
+
+            # if isinstance(row, float):
+            #     continue
+
+            # print(title, i, row)
+
             # add "Time per month" from E3:E4
             if i == 2:
                 if len(row) < 5:
