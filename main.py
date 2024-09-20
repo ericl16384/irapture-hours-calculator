@@ -159,7 +159,11 @@ except FileNotFoundError:
 
 sheets = {}
 for sheet_name in excel_worksheets.sheet_names:
+    if sheet_name.startswith("."):
+        print(f"skipping {sheet_name}")
+        continue
     print(f"parsing  {sheet_name}")
+
     sheets[sheet_name] = excel_worksheets.parse(sheet_name,
         index_col=None, header=None, dtype=str, na_filter=False
     ).replace({np.nan: ""}).values.tolist()
@@ -290,16 +294,24 @@ while True:
     invoices_by_sheet = {}
     projects_by_sheet = {}
 
-
     time_per_month_by_sheet = {}
     remaining_hours_by_sheet = {}
 
 
     for title, sheet in sheets.items():
-        if title.startswith("."):
-            continue
 
         hours_by_sheet[title] = {}
+
+        time_per_month_by_sheet[title] = ""
+        remaining_hours_by_sheet[title] = ""
+
+        if len(sheet) < 6:
+            spreadsheet_errors.append((
+                title,
+                "",
+                "Sheet has less than six rows (no header info)"
+            ))
+            continue
 
         for i, row in enumerate(sheet):
 
@@ -496,11 +508,13 @@ while True:
     for client in sheets:
         export_table.append([client])
 
-    for i, row in enumerate(export_table):
-        if i == 0: continue
-        client = row[0]
-        skip = client == "TOTAL"
+    # for i, row in enumerate(export_table):
+    #     if i == 0: continue
+    #     client = row[0]
+    #     skip = client == "TOTAL"
+    for client in sheets:
 
+        skip = False
 
         # INV
         if client in invoices_by_sheet and not skip:
