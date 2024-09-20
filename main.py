@@ -176,12 +176,12 @@ def get_time_from_user(msg):
         if not ans:
             return None
         for format in (
-            "%Y-%m-%d %H:%M:%S",
-            "%Y-%m-%d %H:%M",
-            "%Y-%m-%d %H",
-            "%Y-%m-%d",
-            "%Y-%m",
-            "%Y",
+            # "%Y-%m-%d %H:%M:%S",
+            # "%Y-%m-%d %H:%M",
+            # "%Y-%m-%d %H",
+            # "%Y-%m-%d",
+            # "%Y-%m",
+            # "%Y",
         ):
             try:
                 return datetime.strptime(ans, format).timestamp()
@@ -230,11 +230,11 @@ def get_time_from_sheet(date, time):
     #     t_str = f"{date} {time}"
 
     for format in (
-        "%m/%d/%Y %H:%M:%S %p",
-        "%m/%d/%Y %H:%M %p",
+        # "%m/%d/%Y %H:%M:%S %p",
+        # "%m/%d/%Y %H:%M %p",
 
-        # "%m/%d/%Y %H:%M:%S",
-        # "%m/%d/%Y %H:%M",
+        r"%Y-%m-%d 00:00:00 %H:%M:%S",
+        r"%Y-%m-%d 00:00:00 %H:%M:%S.%f",
     ):
         try:
             t += datetime.strptime(t_str, format).timestamp()
@@ -243,11 +243,11 @@ def get_time_from_sheet(date, time):
             pass
         except OSError:
             # print(f"WARNING: OSError in strptime; ignoring ({date}) ({time})")
-            return f"WARNING: OSError in strptime; ignoring ({date}) ({time})"
+            return f"WARNING: OSError in strptime; ignoring `{t_str}`"
 
     if t == 0:
         # print(f"WARNING: bad time stamp detected; ignoring ({date}) ({time})")
-        return f"WARNING: bad time stamp detected; ignoring ({date}) ({time})"
+        return f"WARNING: bad time stamp detected; ignoring `{t_str}`"
 
     return t
 
@@ -301,9 +301,6 @@ while True:
     for title, sheet in sheets.items():
 
         hours_by_sheet[title] = {}
-
-        time_per_month_by_sheet[title] = ""
-        remaining_hours_by_sheet[title] = ""
 
         if len(sheet) < 6:
             spreadsheet_errors.append((
@@ -505,37 +502,37 @@ while True:
     # first columns
 
     export_table = [["client", "INV", "Project", "Time per month", "Remaining hours"]]
-    for client in sheets:
-        export_table.append([client])
+    # for client in sheets:
+    #     export_table.append([client])
 
     # for i, row in enumerate(export_table):
     #     if i == 0: continue
     #     client = row[0]
     #     skip = client == "TOTAL"
     for client in sheets:
-
-        skip = False
+        row = [client]
+        export_table.append(row)
 
         # INV
-        if client in invoices_by_sheet and not skip:
+        if client in invoices_by_sheet:
             row.append(",".join(sorted(list(invoices_by_sheet[client]))))
         else:
             row.append("")
 
         # Project
-        if client in projects_by_sheet and not skip:
+        if client in projects_by_sheet:
             row.append(",".join(sorted(list(projects_by_sheet[client]))))
         else:
             row.append("")
         
         # Time per month
-        if True and not skip:
+        if client in time_per_month_by_sheet:
             row.append(time_per_month_by_sheet[client])
         else:
             row.append("")
         
         # Remaining hours
-        if True and not skip:
+        if client in remaining_hours_by_sheet:
             row.append(remaining_hours_by_sheet[client])
         else:
             row.append("")
