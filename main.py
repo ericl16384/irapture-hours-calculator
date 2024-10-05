@@ -64,12 +64,12 @@ def get_time_from_user(msg):
         if not ans:
             return None
         for format in (
-            # "%Y-%m-%d %H:%M:%S",
-            # "%Y-%m-%d %H:%M",
-            # "%Y-%m-%d %H",
-            # "%Y-%m-%d",
-            # "%Y-%m",
-            # "%Y",
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%d %H:%M",
+            "%Y-%m-%d %H",
+            "%Y-%m-%d",
+            "%Y-%m",
+            "%Y",
         ):
             try:
                 return datetime.strptime(ans, format).timestamp()
