@@ -59,7 +59,7 @@ def exit_prompting_installation_of_modules():
 
 
 try:
-    import gspread
+    # import gspread
     import pandas as pd
 except ModuleNotFoundError:
     exit_prompting_installation_of_modules()
