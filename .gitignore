@@ -1,6 +1,7 @@
 *.csv
 *.json
 *.xlsx
+*.txt
 
 google_cloud_key.json
 
